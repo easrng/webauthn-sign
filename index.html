@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>webauthn-sign</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@dmuy/toast@2.0.3/dist/mdtoast.min.css" integrity="sha256-WV+TpSgAjT1IDM4Y5SLraxEi56w75BighBegC1gDJ+s=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@4.5.11/400.css" integrity="sha256-4ftSmmh0ruvMbisE4V+tQpz00plIcpqrePnA3qnWhlU=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@4.5.11/700.css" integrity="sha256-WJ1E9qKEAkg2o+br/adcTqMLXRO9PIUgrPF8p8L2VJM=" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/base64-js@1.5.1/base64js.min.js"
+      integrity="sha256-0ugklWB6v1TxbiHeBNkLqc4WBUUWZ9iEJbq+zpiPFIs="
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/cbor.js"
+      integrity="sha256-QAEwOLpcmrNELyKVU6o13Q1Rtlj9/E3bod4qq1EC2cA="
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"
+      integrity="sha256-xoh0y6ov0WULfXcLMoaA6nZfszdgI8w2CEJ/3k8NBIE="
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/a11y-dialog@7.5.2/dist/a11y-dialog.min.js"
+      integrity="sha256-QnecmqWQS1jNyivfq2OpcEfxTGv0tQ9uu1kSDaIXY8k="
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js@1.12.0/src/toastify.js" integrity="sha256-Qt1tK/3XFT0acCsrReRot8he7HQmux5yk4OX2aXbOW4=" crossorigin="anonymous"></script>
+    <script src="/identicon.js" defer></script>
+    <script src="/webauthn.js" defer></script>
+    <script src="/ui.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <h1>webauthn-sign</h1>
+    </header>
+    <div id="forms">
+      <form id="load">
+        <label for="identity">Identity to sign as:</label>
+        <div class="file keypreview">
+          <button class="clearfile close link" aria-hidden="true">
+            &times;
+          </button>
+          <div class="fileicon" aria-hidden="true">
+            <div class="thumb" style="display: none"></div>
+          </div>
+          <div class="filename" aria-hidden="true"></div>
+          <span class="text" aria-hidden="true">
+            Drop a file here or click to choose
+          </span>
+          <div class="create">
+            Don't have an Identity yet?
+            <button type="button" id="create" class="link">Create one</button>
+          </div>
+          <input type="file" id="identity" required accept=".wsid" />
+        </div>
+        <label for="file">File to sign:</label>
+        <div class="file">
+          <button class="clearfile close link" aria-hidden="true">
+            &times;
+          </button>
+          <div class="fileicon" aria-hidden="true"></div>
+          <div class="filename" aria-hidden="true"></div>
+          <span class="text" aria-hidden="true">
+            Drop a file here or click to choose
+          </span>
+          <input type="file" id="file" required />
+        </div>
+        <button>Sign File</button>
+      </form>
+      <div class="divider"></div>
+      <form id="verify">
+        <label for="vsig">Signature to verify:</label>
+        <div class="file">
+          <button class="clearfile close link" aria-hidden="true">
+            &times;
+          </button>
+          <div class="fileicon" aria-hidden="true"></div>
+          <div class="filename" aria-hidden="true"></div>
+          <span class="text" aria-hidden="true">
+            Drop a file here or click to choose
+          </span>
+          <input type="file" id="vsig" accept=".wsig" required />
+        </div>
+        <label for="vfile">File to verify:</label>
+        <div class="file">
+          <button class="clearfile close link" aria-hidden="true">
+            &times;
+          </button>
+          <div class="fileicon" aria-hidden="true"></div>
+          <div class="filename" aria-hidden="true"></div>
+          <span class="text" aria-hidden="true">
+            Drop a file here or click to choose
+          </span>
+          <input type="file" id="vfile" required />
+        </div>
+        <button>Verify Signature</button>
+      </form>
+    </div>
+    <div
+      id="result-dialog"
+      aria-labelledby="result-dialog-title"
+      aria-hidden="true"
+      class="dialog-container hide"
+    >
+      <div data-a11y-dialog-hide class="dialog-overlay"></div>
+      <div role="document" class="dialog-content">
+        <header>
+          <h1 id="result-dialog-title">Signed File</h1>
+          <button
+            type="button"
+            class="link close"
+            data-a11y-dialog-hide
+            aria-label="Close dialog"
+          >
+            &times;
+          </button>
+        </header>
+        <img id="result-identicon">
+        <dl id="info">
+          <dt>Signed by</dt>
+          <dd id="result-key"></dd>
+          <dt>Signed on</dt>
+          <dd id="result-origin"></dd>
+          <dt>File hash</dt>
+          <dd id="result-hash"></dd>
+        </dl>
+      </div>
+    </div>
+	<div class="warning"><span>I am not a cryptographer and it's entirely possible that this code could have bugs with security implications, so you probably shouldn't use it for anything serious until someone who knows what they're doing better than I do looks at it.</span></div>
+  </body>
+</html>
